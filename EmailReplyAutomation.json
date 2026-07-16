@@ -1,0 +1,188 @@
+{
+  "name": "EmailReplyAutomation",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -80,
+        272
+      ],
+      "id": "9b9e2ca1-6b2d-45e7-b9b5-3fcd1f1b277a",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "hz5Xsw73XCQJgpRl",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "15d94c23-67ba-4dee-9725-b67147fccae9",
+              "leftValue": "={{ $json.From.includes(\"noreply\") }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        128,
+        272
+      ],
+      "id": "5e5527d6-10a1-4a09-b735-bff9fb764dcf",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Give reply to this email received\n\nFrom: {{ $json.From }}\nSubject: {{ $json.Subject }}\nBody: {{ $json.snippet }}",
+        "options": {
+          "systemMessage": "You are Talha Yasin's Email Assistant, who manages his email replies.\n\nRules:\n- Read the incoming email and compose ONE complete, well-formed reply.\n- Call the \"Send a message in Gmail\" tool exactly ONCE per incoming email.\n- Never call the tool multiple times for the same email.\n- Never send partial sentences — the Message parameter must contain the full reply text."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        464,
+        144
+      ],
+      "id": "8fcff83c-d637-4486-8622-a14022a19d1c",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {
+          "maxTokensToSample": 4096
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        432,
+        336
+      ],
+      "id": "d7a6f2b0-2af1-4ddb-a1da-5920887dfc25",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "STTau9zyp4lf4FLr",
+          "name": "Groq account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('To', ``, 'string') }}",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', ``, 'string') }}",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        320
+      ],
+      "id": "cc0cfc90-e4a3-4fd4-94ba-7b426cb2aaab",
+      "name": "Send a message in Gmail",
+      "webhookId": "972d6e05-edbf-43b5-9aaa-0cc08d193a85",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "hz5Xsw73XCQJgpRl",
+          "name": "Gmail account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message in Gmail": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "6c9ae82d-2597-45a9-8cba-7d735042bd39",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "647e0ac74095742159e3cfd97824ed647da19ac1fbbe3ff761e82cdbf5133d02"
+  },
+  "nodeGroups": [],
+  "id": "OtmXsnKYVt5pQ9yF",
+  "tags": []
+}
