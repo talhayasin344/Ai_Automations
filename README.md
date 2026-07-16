@@ -20,14 +20,6 @@ This repository will continuously grow with workflows covering topics such as:
 - ⚡ Productivity Workflows
 - And much more...
 
-## 📁 Current Workflows
-
-| Workflow | Description | Status |
-|----------|-------------|--------|
-| Workflow #1 | First uploaded automation | ✅ Available |
-
-> More workflows will be added regularly.
-
 ## 🚀 How to Use
 
 1. Download the workflow JSON file.
