@@ -1,0 +1,438 @@
+{
+  "name": "AI Resume Ranking",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "AI Resume Ranking",
+        "formDescription": "This page is the editor interface for an automation workflow in n8n titled \"AI Resume Ranking.\"",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "What is your full name?",
+              "placeholder": "john doe",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "What is your email?",
+              "fieldType": "email",
+              "placeholder": "john@example.com",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "What is the job description?",
+              "placeholder": "Enter the job description."
+            },
+            {
+              "fieldLabel": "What is your phone number?(Optional)",
+              "placeholder": "Enter your phone number here."
+            },
+            {
+              "fieldLabel": "What is the role you applied for?",
+              "placeholder": "Python Developer",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Upload your resume.",
+              "fieldType": "file",
+              "acceptFileTypes": ".pdf",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {
+          "buttonLabel": "Submit"
+        }
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        0,
+        32
+      ],
+      "id": "9b92cb24-6427-4cd2-a55c-e595c21d0d8a",
+      "name": "On form submission",
+      "webhookId": "c5d4af6f-329b-4bd5-a45d-f996236e0fb5"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "Upload_your_resume_",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "faaf7bd2-ae21-42b7-923d-85c3dd5e4b43",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Candidate Submission\n\nJob Title\n\n{{ $('On form submission').item.json['What is the role you applied for?'] }}\n\nJob Description\n\n{{ $('On form submission').item.json['What is the job description?'] }}\n\nResume\n\n{{ $('Extract from File').item.json.text }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are an AI Resume Screening Assistant.\n\nYour only responsibility is to analyze the resume against the provided job description.\n\nExtract only information explicitly found in the resume.\n\nNever invent information.\n\ngive message in improvements which describe why user gets that score or rank\n\nIf information is unavailable use\n\n\"\" for strings\n\n[] for arrays\n\n0 for numbers\n\nCalculate a match score.\n\nRubric\n\nSkills\n40%\n\nExperience\n35%\n\nEducation\n15%\n\nCertifications\n10%\n\nGenerate\n\ncandidate_name\n\ncandidate_email\n\ncandidate_phone\n\nlinkedin\n\ngithub\n\nportfolio\n\nyears_of_experience\n\ncurrent_company\n\ncurrent_role\n\nlocation\n\nskills\n\nsoft_skills\n\nexperience_summary\n\neducation\n\ncertifications\n\njob_title\n\nmatch_score\n\nimprovements\n\nrank_label\n\nstrengths\n\nweaknesses\n\nmissing_skills\n\ninterview_questions\n\nrecommendation\n\nmatch_reasoning\n\nNo markdown.\n\nNo explanations.\n\nNo code blocks.\n\nDo not call tools.\n\nDo not write any additional text."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        432,
+        -32
+      ],
+      "id": "d4040c7f-da46-44f6-bd90-80398e0754da",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "meta-llama/llama-4-scout-17b-16e-instruct",
+        "options": {
+          "maxTokensToSample": 4096
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        304,
+        176
+      ],
+      "id": "2840fdbc-2747-4953-abe5-070ac151d62d",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "STTau9zyp4lf4FLr",
+          "name": "Groq account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"candidate_name\": \"Sarah Chen\",\n  \"candidate_email\": \"sarah.chen.dev@email.com\",\n  \"candidate_phone\": \"+1 (415) 555-0182\",\n  \"linkedin\": \"https://linkedin.com/in/sarahchendev\",\n  \"github\": \"https://github.com/schen-dev\",\n  \"portfolio\": \"https://sarahchen.dev\",\n  \"years_of_experience\": 5,\n  \"current_company\": \"Northwind Payments\",\n  \"current_role\": \"Senior Software Engineer\",\n  \"location\": \"San Francisco, CA\",\n  \"skills\": [\n    \"Python\",\n    \"Go\",\n    \"JavaScript\",\n    \"SQL\",\n    \"FastAPI\",\n    \"Flask\",\n    \"Docker\",\n    \"Kubernetes\",\n    \"AWS\",\n    \"Terraform\",\n    \"React\",\n    \"Node.js\",\n    \"PostgreSQL\",\n    \"Redis\",\n    \"Git\",\n    \"GitHub Actions\"\n  ],\n  \"soft_skills\": [\n    \"Leadership\",\n    \"Communication\",\n    \"Problem Solving\",\n    \"Mentoring\",\n    \"Team Collaboration\"\n  ],\n  \"experience_summary\": \"Backend software engineer with 5 years of experience designing scalable APIs, distributed systems, and cloud-native applications.\",\n  \"education\": {\n    \"degree\": \"Bachelor of Science\",\n    \"field\": \"Computer Science\",\n    \"university\": \"University of California, Davis\",\n    \"graduation_date\": \"May 2018\",\n    \"gpa\": \"3.7/4.0\"\n  },\n  \"certifications\": [\n    \"AWS Certified Solutions Architect – Associate (2023)\",\n    \"Certified Kubernetes Application Developer (2022)\"\n  ],\n  \"job_title\": \"Java Developer\",\n  \"match_score\": 62,\n  \"improvements\":\"You should improve your Java Skills\",\n  \"rank_label\": \"Possible Match\",\n  \"strengths\": [\n    \"Strong backend development experience\",\n    \"Cloud infrastructure expertise\",\n    \"Scalable API design\",\n    \"Microservices architecture\",\n    \"Leadership and mentoring\"\n  ],\n  \"weaknesses\": [\n    \"No professional Java experience\",\n    \"Limited Spring Boot experience\"\n  ],\n  \"missing_skills\": [\n    \"Java\",\n    \"Spring Boot\",\n    \"Hibernate\"\n  ],\n  \"interview_questions\": [\n    \"Can you explain how your backend experience with Python and Go would transfer to Java?\",\n    \"Describe a distributed system you designed and the challenges you solved.\",\n    \"How have you optimized API performance in production?\"\n  ],\n  \"recommendation\": \"Review\",\n  \"match_reasoning\": \"The candidate has strong backend engineering experience, cloud expertise, and scalable system design skills. However, the resume lacks professional Java and Spring Boot experience, reducing the overall match for the Java Developer position.\"\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        560,
+        176
+      ],
+      "id": "40ab3b6e-5cad-461b-8b39-a935b2233022",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "options": {
+          "maxTokensToSample": 4096
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        656,
+        368
+      ],
+      "id": "4a87a6ce-9e96-493e-aba0-66d21fa009fb",
+      "name": "Groq Chat Model1",
+      "credentials": {
+        "groqApi": {
+          "id": "STTau9zyp4lf4FLr",
+          "name": "Groq account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "collection": "candidates",
+        "fields": "candidate_name,candidate_email,candidate_phone,linkedin,github,portfolio,years_of_experience,current_company,current_role,location,skills,soft_skills,experience_summary,education,certifications,job_title,match_score,improvements,rank_label,strengths,weaknesses,missing_skills,interview_questions,recommendation,match_reasoning",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.3,
+      "position": [
+        1008,
+        32
+      ],
+      "id": "2aeba2d7-2fed-4fdb-a8cc-364a22cca2b1",
+      "name": "Insert documents",
+      "credentials": {
+        "mongoDb": {
+          "id": "M7m2JaLC09SxcfkL",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        784,
+        0
+      ],
+      "id": "95a8942b-a59a-4dc5-866c-6a75f1e684f8",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "988754dc-8ed3-4653-8ea0-bacab4768cce",
+              "leftValue": "={{ $json.match_score }}",
+              "rightValue": 80,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1216,
+        32
+      ],
+      "id": "77835fbe-0acf-4b5c-8fae-49539d00040e",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BJ2SUE3RP",
+          "mode": "list",
+          "cachedResultName": "all-frontier"
+        },
+        "text": "=:page_with_curl: *New Resume Evaluation Completed*\n• *Candidate:* {{ $('Edit Fields').item.json.candidate_name }}\n• *Target Role:* {{ $('Edit Fields').item.json.job_title }}\n• *Match Score:* `{{ $('Edit Fields').item.json.match_score }}%`\n• *Experience:* {{ $('Edit Fields').item.json.years_of_experience }} years\n\n*Experience Summary:*\n> {{ $('Edit Fields').item.json.experience_summary }}\n\n:email: *Contact:* {{ $('Edit Fields').item.json.candidate_email }}",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.5,
+      "position": [
+        1424,
+        -64
+      ],
+      "id": "9294a83a-4fb7-4388-8d83-edf4d535c719",
+      "name": "Send a message",
+      "webhookId": "1a2686b1-41dd-4002-8280-ebfe3322a94e",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "VE4YeUiP0Ss0WolQ",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "talhayasin9565@gmail.com",
+        "subject": "=Resume Evaluation for {{ $json.candidate_name }}",
+        "message": "=<div style=\"font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; padding: 20px; border-radius: 8px;\">   <h2 style=\"color: #ff6d5a; margin-top: 0;\">Resume Evaluation Report</h2>   <p>Hello,</p>   <p>An AI analysis has been completed for candidate <strong>{{ $json.candidate_name }}</strong>. Here is a summary of their evaluation:</p>      <hr style=\"border: 0; border-top: 1px solid #eee; margin: 20px 0;\">      <table style=\"width: 100%; border-collapse: collapse; margin-bottom: 20px;\">     <tr>       <td style=\"padding: 6px 0; font-weight: bold; width: 35%;\">Candidate Name:</td>       <td style=\"padding: 6px 0;\">{{ $json.candidate_name }}</td>     </tr>     <tr>       <td style=\"padding: 6px 0; font-weight: bold;\">Target Role:</td>       <td style=\"padding: 6px 0;\">{{ $json.job_title }}</td>     </tr>     <tr>       <td style=\"padding: 6px 0; font-weight: bold;\">Match Score:</td>       <td style=\"padding: 6px 0;\"><span style=\"background-color: #e6f7ed; color: #1e7e34; padding: 3px 8px; border-radius: 4px; font-weight: bold;\">{{ $json.match_score }}%</span></td>     </tr>     <tr>       <td style=\"padding: 6px 0; font-weight: bold;\">Experience:</td>       <td style=\"padding: 6px 0;\">{{ $json.years_of_experience }} years</td>     </tr>     <tr>       <td style=\"padding: 6px 0; font-weight: bold;\">Email:</td>       <td style=\"padding: 6px 0;\"><a href=\"mailto:{{ $json.candidate_email }}\" style=\"color: #0066cc;\">{{ $json.candidate_email }}</a></td>     </tr>   </table>    <h3 style=\"color: #555; margin-bottom: 8px;\">Experience Summary</h3>   <p style=\"background: #f9f9f9; padding: 12px; border-left: 4px solid #ff6d5a; margin: 0; border-radius: 0 4px p4px 0;\">     {{ $json.experience_summary }}   </p>    <hr style=\"border: 0; border-top: 1px solid #eee; margin: 20px 0;\">      <p style=\"font-size: 12px; color: #777; text-align: center; margin-bottom: 0;\">     This is an automated workflow notification sent via n8n.   </p> </div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1424,
+        128
+      ],
+      "id": "e1c96270-914a-42b7-a960-222a54c6a65d",
+      "name": "Send a message1",
+      "webhookId": "0292bd05-dea7-4e24-b147-3351319ecd21",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "hz5Xsw73XCQJgpRl",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Edit Fields').item.json.candidate_email }}",
+        "subject": "=Application Update - {{ $('Edit Fields').item.json.current_role }} Role",
+        "message": "==<div style=\"font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; padding: 24px; border-radius: 8px;\">\n  <h2 style=\"color: #ff6d5a; margin-top: 0;\">Your Application Update</h2>\n\n  <p>Hi {{ $('Edit Fields').item.json.candidate_name }},</p>\n\n  <p>Thank you for applying for the <strong>{{ $('Edit Fields').item.json.job_title }}</strong> position.\n  Our AI-assisted screening has completed reviewing your resume, and here's where things stand:</p>\n\n  <div style=\"background: {{ $('Edit Fields').item.json.match_score >= 80 ? '#e6f7ed' : $('Edit Fields').item.json.match_score >= 50 ? '#fff8f0' : '#fdecea' }}; padding: 16px; border-radius: 6px; text-align: center; margin: 20px 0;\">\n    <div style=\"font-size: 13px; color: #666; text-transform: uppercase; letter-spacing: 0.5px;\">Status</div>\n    <div style=\"font-size: 20px; font-weight: bold; color: {{ $('Edit Fields').item.json.match_score >= 80 ? '#1e7e34' : $('Edit Fields').item.json.match_score >= 50 ? '#b26a00' : '#c0392b' }}; margin-top: 4px;\">\n      {{ $('Edit Fields').item.json.rank_label }}\n    </div>\n    <div style=\"font-size: 13px; color: #666; margin-top: 4px;\">Match Score: {{ $('Edit Fields').item.json.match_score }}%</div>\n  </div>\n\n  <h3 style=\"color: #555; margin-bottom: 8px;\">What Stood Out</h3>\n  <p style=\"background: #f9f9f9; padding: 12px; border-left: 4px solid #1e7e34; margin: 0 0 16px 0; border-radius: 0 4px 4px 0;\">\n    {{ $('Edit Fields').item.json.strengths.length > 0 ? $('Edit Fields').item.json.strengths.join(', ') : 'A well-rounded background.' }}\n  </p>\n\n  <h3 style=\"color: #555; margin-bottom: 8px;\">Room to Grow</h3>\n  <p style=\"background: #fff8f0; padding: 12px; border-left: 4px solid #ffb020; margin: 0 0 16px 0; border-radius: 0 4px 4px 0;\">\n    {{ $('Edit Fields').item.json.missing_skills.length > 0 ? $('Edit Fields').item.json.missing_skills.join(', ') : 'No major gaps identified for this role.' }}\n  </p>\n\n  <h3 style=\"color: #555; margin-bottom: 8px;\">Next Steps</h3>\n  <p>\n    {{ $('Edit Fields').item.json.match_score >= 80 \n      ? 'Your profile is a strong fit — our team will be reaching out shortly to schedule next steps.' \n      : $('Edit Fields').item.json.match_score >= 50 \n      ? 'Your profile shows solid potential. Our team is reviewing further and will follow up if there\\'s a match for this or a future role.' \n      : 'This particular role may not be the closest fit right now, but we\\'ll keep your resume on file for other opportunities that better match your background.' }}\n\n        improve Your Resume: {{ $('Edit Fields').item.json.improvements }}\n  </p>\n\n  <hr style=\"border: 0; border-top: 1px solid #eee; margin: 20px 0;\">\n\n  <p>Best regards,<br>[Your Company Name] Recruitment Team</p>\n\n  <p style=\"font-size: 12px; color: #777; text-align: center; margin-top: 20px; margin-bottom: 0;\">\n    This is an automated notification generated by our AI-assisted screening system.\n  </p>\n</div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1648,
+        32
+      ],
+      "id": "6217fbdc-d785-435d-adac-2a3b2694477d",
+      "name": "Send a message2",
+      "webhookId": "46d0cf1d-2552-41bf-9351-9145fd5a6c4c",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "hz5Xsw73XCQJgpRl",
+          "name": "Gmail account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Insert documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert documents": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Send a message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message1": {
+      "main": [
+        [
+          {
+            "node": "Send a message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "46476d7b-60f8-4cdc-8eef-d1521e4caa30",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "647e0ac74095742159e3cfd97824ed647da19ac1fbbe3ff761e82cdbf5133d02"
+  },
+  "nodeGroups": [],
+  "id": "VEwgIjCqeFSz8k9C",
+  "tags": []
+}
