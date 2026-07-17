@@ -1,0 +1,281 @@
+{
+  "name": "AI Email Summarizer",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "readStatus": "unread"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        768,
+        112
+      ],
+      "id": "02dd6f5e-f542-456a-939a-7118a4f77d6e",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "gmailOAuth2 (connect your own)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=### INCOMING EMAIL TO PROCESS:\nFrom: {{ $json.from.value[0].name }} <{{ $json.from.value[0].address }}>\nSubject: {{ $json.subject }}\nBody: {{ $json.text }}",
+        "options": {
+          "systemMessage": "You are an expert AI Email Triager and Summarizer. Your job is to process incoming emails from Gmail, analyze their contents, and log a structured record of each one.\n\nYou have access to one tool:\n1. \"Append row in sheet in Google Sheets\": Use this tool to log every analyzed email, with no exceptions.\n\n### Your Workflow:\n1. Analyze the incoming email body, sender name, and sender email provided below.\n2. Determine urgency: \"High\", \"Medium\", or \"Low\", based on keywords, tone, or actionable deadlines.\n3. Generate a concise, 1-2 sentence summary of the email.\n4. Call \"Append row in sheet in Google Sheets\" with these exact arguments:\n   - sender_name\n   - sender_email\n   - is_summerized (set to \"Yes\")\n   - summary\n   - urgency (\"High\", \"Medium\", or \"Low\")\n5. Every email is logged the same way, regardless of urgency level. Urgency is a data field you record, not a condition for whether you take action. Once the row is logged, your work on that email is complete.\n\nBe precise, objective, and efficient in your tool selection.",
+          "maxIterations": 10
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1024,
+        112
+      ],
+      "id": "e869b5ba-5f18-4684-b2e2-443c7498ece8",
+      "name": "AI Agent",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.1-8b-instant",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        992,
+        336
+      ],
+      "id": "62bbe4c4-ebb6-49b4-83a5-052edd95034b",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "groqApi (connect your own)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "markAsRead",
+        "messageId": "={{ $('Gmail Trigger').item.json.id }}"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1488,
+        16
+      ],
+      "id": "74acb0af-7ccc-40e1-a640-7764b98b872c",
+      "name": "Mark Email as Read",
+      "webhookId": "REPLACE_WITH_GENERATED_WEBHOOK_ID",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "gmailOAuth2 (connect your own)"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "markAsRead",
+        "messageId": "={{ $('Gmail Trigger').item.json.id }}"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1488,
+        208
+      ],
+      "id": "60865929-801a-49dc-9fa4-aec11d9a0cd0",
+      "name": "Mark Email as Read (Error Path)",
+      "webhookId": "REPLACE_WITH_GENERATED_WEBHOOK_ID",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "gmailOAuth2 (connect your own)"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "notes": "Runs even if the AI Agent errored out, so a failed/unparseable email doesn't get reprocessed every minute. Consider routing this to a manual-review label instead of markAsRead if you'd rather not silently drop failures."
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID_HERE",
+          "mode": "list",
+          "cachedResultName": "Your Sheet Name",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID_HERE/edit"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1odX6mAVFtLOrYf7PItlhPKDs2GPFZ5Ol09ysOnEd_f8/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "is_summerized": "={{ $fromAI('is_summerized', '', 'string') }}",
+            "sender_name": "={{ $fromAI('sender_name', '', 'string') }}",
+            "sender_email": "={{ $fromAI('sender_email', '', 'string') }}",
+            "summary": "={{ $fromAI('summary', '', 'string') }}",
+            "urgency": "={{ $fromAI('urgency', '', 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "sender_name",
+              "displayName": "sender_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sender_email",
+              "displayName": "sender_email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "is_summerized",
+              "displayName": "is_summerized",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "urgency",
+              "displayName": "urgency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1184,
+        320
+      ],
+      "id": "2dc70e5b-bf1c-4500-b082-4bf6ce68b6b8",
+      "name": "Append row in sheet in Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "googleSheetsOAuth2Api (connect your own)"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Mark Email as Read",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark Email as Read (Error Path)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "e9f9a18f-159f-499e-b9d4-23818e5c08a6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "REPLACE_WITH_YOUR_INSTANCE_ID"
+  },
+  "nodeGroups": [],
+  "id": "ai-email-summarizer-template",
+  "tags": []
+}
